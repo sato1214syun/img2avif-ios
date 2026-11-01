@@ -86,11 +86,11 @@ def convert_image(image_path: Path, output_path: Path) -> None:
             img2 = img2.convert("RGB")
 
         img2.save(output_path, format="AVIF", quality=40)
-    org_size = image_path.stat().st_size / 1024
-    cnv_size = output_path.stat().st_size / 1024
-    ratio = int(cnv_size / org_size)
+    org_size = int(image_path.stat().st_size / 1024)
+    cnv_size = int(output_path.stat().st_size / 1024)
+    ratio = int(cnv_size / org_size * 100)
     print(  # noqa: T201
-        f"Converted: ({ratio}) : {image_path.name}({org_size}KB) -> {output_path.name}({cnv_size}KB)",  # noqa: E501
+        f"Converted: ({ratio}%) : {image_path.name}({org_size}KB) -> {output_path.name}({cnv_size}KB)",  # noqa: E501
     )
 
 

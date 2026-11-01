@@ -1,0 +1,27 @@
+[project]
+name = "test-nvim"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "sato1214syun", email = "sato1214syun@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "pillow>=13.0.0",
+    "rarfile>=4.5",
+]
+
+[project.scripts]
+test-nvim = "test_nvim:main"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "debugpy>=1.8.22",
+    "pyright>=1.1.414",
+    "ruff>=0.17.3",
+]

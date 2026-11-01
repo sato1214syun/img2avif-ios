@@ -1,0 +1,19 @@
+# Ruff supports a top-level `src` option in lieu of isort's `src_paths` setting.
+# All paths are relative to the project root, which is the directory containing the pyproject.toml.
+builtins = ["_"]
+fix = true
+src = ["src", "tests"]
+target-version = "py312"
+
+[lint]
+select = ["ALL"]
+ignore = ["CPY001"]
+
+[lint.pydocstyle]
+convention = "numpy"
+
+[lint.per-file-ignores]
+"/**/tests/**/*.py" = ["S101", "ARG", "FBT", "PLR2004", "S311"]
+
+[format]
+docstring-code-format = true

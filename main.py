@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 import tempfile
 import zipfile
 from pathlib import Path
 
 from PIL import Image, ImageOps
+
 try:
     import rarfile
-    except ImportError:  # pragma: no cover - optional dependency for RAR support
+except ImportError:  # pragma: no cover - optional dependency for RAR support
     rarfile = None
 finally:
     pass
@@ -21,33 +21,39 @@ ARCHIVE_EXTS = {".zip", ".rar"}
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse args."""
     parser = argparse.ArgumentParser(
-        description="Convert images in folders, files, and ZIP/RAR archives to AVIF."
+        description="Convert images in folders, files, and ZIP/RAR archives to AVIF.",
     )
     parser.add_argument(
         "paths",
         nargs="+",
-        help="One or more file or directory paths. ZIP/RAR archives are extracted automatically.",
+        metavar="FILES_OR_DIR",
+        help="a file, files or directory paths. ZIP/RAR are extracted automatically.",
     )
     parser.add_argument(
         "-o",
         "--output-dir",
+        required=True,
+        metavar="DIR",
         type=Path,
-        default=Path("./src/output"),
         help="Directory where converted AVIF files will be saved.",
     )
     return parser.parse_args()
 
 
 def is_archive(path: Path) -> bool:
+    """Check the input is an archived file or not."""
     return path.is_file() and path.suffix.lower() in ARCHIVE_EXTS
 
 
 def is_image(path: Path) -> bool:
+    """Check the input is an image file or not."""
     return path.is_file() and path.suffix.lower() in ALLOWED_IMAGE_EXTS
 
 
 def extract_archive(archive_path: Path, destination_dir: Path) -> None:
+    """Extract the archived file depends on its suffix."""
     destination_dir.mkdir(parents=True, exist_ok=True)
 
     if archive_path.suffix.lower() == ".zip":
@@ -57,17 +63,18 @@ def extract_archive(archive_path: Path, destination_dir: Path) -> None:
 
     if archive_path.suffix.lower() == ".rar":
         if rarfile is None:
-            raise RuntimeError(
-                "rarfile is not installed. Install it with: pip install rarfile"
-            )
+            err_msg = "rarfile is not installed. Install it with: pip install rarfile"
+            raise RuntimeError(err_msg)
         with rarfile.RarFile(archive_path) as archive:
             archive.extractall(destination_dir)
         return
 
-    raise ValueError(f"Unsupported archive type: {archive_path}")
+    err_msg = f"Unsupported archive type: {archive_path}"
+    raise ValueError(err_msg)
 
 
 def convert_image(image_path: Path, output_path: Path) -> None:
+    """Convert image to avif by pillow."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with Image.open(image_path) as img:
@@ -79,11 +86,15 @@ def convert_image(image_path: Path, output_path: Path) -> None:
             img2 = img2.convert("RGB")
 
         img2.save(output_path, format="AVIF", quality=40)
-
-    print(f"Converted: {image_path} -> {output_path}")
+    org_size = image_path.stat().st_size / (1024 * 1024)
+    cnv_size = output_path.stat().st_size / (1024 * 1024)
+    print(  # noqa: T201
+        f"Converted: {image_path.name}:{org_size:.2f}MB -> {output_path.name}:{cnv_size:.2f}MB",  # noqa: E501
+    )
 
 
 def process_directory(directory: Path, output_root: Path) -> None:
+    """Convert files inside a directory."""
     for child in sorted(directory.rglob("*")):
         if child.is_dir():
             continue
@@ -101,12 +112,13 @@ def process_directory(directory: Path, output_root: Path) -> None:
                     extract_archive(child, extracted_dir)
                     process_directory(extracted_dir, output_root / child.stem)
                 except Exception as exc:  # noqa: BLE001
-                    print(f"Failed archive: {child} | {exc}")
+                    print(f"Failed archive: {child} | {exc}")  # noqa: T201
 
 
 def process_path(input_path: Path, output_root: Path) -> None:
+    """Check path type and process."""
     if not input_path.exists():
-        print(f"Not found: {input_path}")
+        print(f"Not found: {input_path}")  # noqa: T201
         return
 
     if input_path.is_dir():
@@ -125,13 +137,14 @@ def process_path(input_path: Path, output_root: Path) -> None:
                 extract_archive(input_path, extracted_root)
                 process_directory(extracted_root, output_root / input_path.stem)
             except Exception as exc:  # noqa: BLE001
-                print(f"Failed archive: {input_path} | {exc}")
+                print(f"Failed archive: {input_path} | {exc}")  # noqa: T201
         return
 
-    print(f"Unsupported file type ignored: {input_path}")
+    print(f"Unsupported file type ignored: {input_path}")  # noqa: T201
 
 
 def main() -> None:
+    """Implement main."""
     args = parse_args()
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
